@@ -1,0 +1,86 @@
+name: Build DouDuo iOS 17 IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner（arm64 拥堵时可换 macos-15-intel）'
+        required: false
+        default: 'macos-15'
+        type: choice
+        options:
+          - macos-15
+          - macos-15-intel
+          - macos-latest
+
+jobs:
+  build:
+    name: Build DouDuo iOS 17 Unsigned IPA (${{ inputs.runner || 'macos-15' }})
+    runs-on: ${{ inputs.runner || 'macos-15' }}
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          uname -m
+          ls -d /Applications/Xcode*.app || true
+          NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "selected: $NEWEST"
+          sudo xcode-select -s "$NEWEST" || true
+          xcodebuild -version
+          swift --version
+          xcodebuild -showsdks | grep -i iphoneos || true
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Fetch VLCKit (~1GB, required)
+        run: |
+          chmod +x ./scripts/fetch-vlckit.sh
+          ./scripts/fetch-vlckit.sh
+          ls -lh Vendor/VLCKit/
+
+      - name: Generate project (deployment target iOS 17)
+        run: |
+          grep -n "iOS:" project.yml
+          xcodegen generate
+
+      - name: Resolve packages
+        run: xcodebuild -resolvePackageDependencies -project DouDuo.xcodeproj -scheme DouDuo
+
+      - name: Build unsigned
+        run: |
+          set -o pipefail
+          xcodebuild -project DouDuo.xcodeproj -scheme DouDuo -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -1)
+          echo "APP=$APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" || true
+          otool -l "$APP/DouDuo" | grep -A3 LC_BUILD_VERSION | head -5 || true
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry DouDuo-1.7.2-ios17-unsigned.ipa Payload
+          ls -lh DouDuo-1.7.2-ios17-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: DouDuo-ios17-unsigned
+          path: DouDuo-1.7.2-ios17-unsigned.ipa
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
