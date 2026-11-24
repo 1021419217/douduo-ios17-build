@@ -88,8 +88,17 @@ actor DYVideoCache {
     }
 
     /// 调试日志用（不要求精确）
-    private static let downloadCount = Mutex(0)
-    nonisolated static var activeDownloads: Int { downloadCount.withLock { $0 } }
+    /// iOS 17 兼容：原用 Synchronization.Mutex（iOS 18+），改为 NSLock + Int，行为等价
+    private static let downloadCountLock = NSLock()
+    private static var _downloadCount = 0
+    nonisolated static var activeDownloads: Int {
+        downloadCountLock.lock(); defer { downloadCountLock.unlock() }
+        return _downloadCount
+    }
+    nonisolated static func changeDownloadCount(_ delta: Int) {
+        downloadCountLock.lock(); defer { downloadCountLock.unlock() }
+        _downloadCount += delta
+    }
 
     private var entries: [Entry]
     private var job: Task<Void, Never>?
@@ -254,8 +263,8 @@ actor DYVideoCache {
     private func storeFull(_ item: DYAweme, fromHead head: URL? = nil) async {
         let fm = FileManager.default
         let t0 = Date()
-        Self.downloadCount.withLock { $0 += 1 }
-        defer { Self.downloadCount.withLock { $0 -= 1 } }
+        Self.changeDownloadCount(1)
+        defer { Self.changeDownloadCount(-1) }
 
         let urls = downloadURLs(item)
         for url in head == nil ? urls[...] : urls.prefix(1) {

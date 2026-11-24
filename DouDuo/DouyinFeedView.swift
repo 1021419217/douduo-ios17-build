@@ -4769,7 +4769,7 @@ struct DYClassicVideoPage: View {
         actions(foreground)
             .frame(width: railWidth)
             .padding(.vertical, 7)
-            .glassEffect(.regular, in: .capsule)
+            .ddGlass(.regular, .capsule)
             .environment(\.colorScheme, .dark)
             .modifier(DYHoldBoostArea(control: item.images.isEmpty ? boost : nil))
     }

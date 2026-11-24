@@ -172,7 +172,7 @@ struct DYHotSearchRow: View {
                 if (1...3).contains(rank) {
                     Image(systemName: "hexagon.fill")
                         .resizable().scaledToFit()
-                        .foregroundStyle(LinearGradient(colors: [accent.mix(with: .white, by: 0.4), accent],
+                        .foregroundStyle(LinearGradient(colors: [accent.ddMixWhite(0.4), accent],
                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(rank, format: .number).font(.footnote.bold().italic()).foregroundStyle(.white)
                 } else if rank <= 0 {

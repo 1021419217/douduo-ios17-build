@@ -58,6 +58,7 @@ struct DYHomeReselectionGuard: UIViewControllerRepresentable {
             previousDelegate = nil
         }
 
+        @available(iOS 18.0, *)
         func tabBarController(_ controller: UITabBarController, shouldSelectTab tab: UITab) -> Bool {
             if tab === controller.selectedTab && tab.title == DYMainTab.home.rawValue { return rejectHomeReselection() }
             return previousDelegate?.tabBarController?(controller, shouldSelectTab: tab) ?? true

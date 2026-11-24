@@ -65,7 +65,7 @@ struct DYOfflineDownloadScreen: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .scrollEdgeEffectHidden(true, for: .bottom)
+        .ddScrollEdgeHidden(true, for: .bottom)
         .background(Color.ddBackground)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             downloadButton
@@ -171,7 +171,7 @@ struct DYOfflineDownloadScreen: View {
                 }
                 .frame(height: downloadButtonHeight)
                 .clipShape(.capsule)
-                .glassEffect(.regular.interactive(downloadButtonEnabled), in: .capsule)
+                .ddGlass(.regularInteractiveEnabled(downloadButtonEnabled), .capsule)
                 .contentShape(.capsule)
                 .opacity(downloadButtonEnabled ? 1 : 0.45)
                 .animation(reduceMotion || !downloading ? nil : .easeInOut(duration: 0.28), value: downloads.progress?.saved)

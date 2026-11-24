@@ -1185,7 +1185,7 @@ struct DYGrid: View {
                             .padding(.horizontal, 16).padding(.vertical, 10)
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .ddGlass(.regularInteractive, .capsule)
                     .padding(.bottom, 20)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .accessibilityIdentifier("douyin.author.jumpRecent")
@@ -1703,7 +1703,7 @@ struct DYSearchScreen: View {
         NavigationStack {
             searchContent
                 .modifier(DYSearchBackToolbar(onBack: { if let onClose { onClose() } else { dismiss() } }))
-                .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+                .ddToolbarBgHiddenNavBar()
         }
         // 左缘右滑返回；Duo 内屏左右分栏时搜索在右半屏，左缘是分界线，不挂
         .dyEdgeBack(enabled: !edgeIsSplitDivider) { if let onClose { onClose() } else { dismiss() } }

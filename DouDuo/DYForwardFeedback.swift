@@ -109,7 +109,7 @@ struct DYForwardSuccessBanner: View {
                 RoundedRectangle(cornerRadius: 18).fill(Color(uiColor: .secondarySystemBackground))
             }
         }
-        .glassEffect(mode == DDChromeMode.duoClassic.rawValue ? .regular : .identity, in: .rect(cornerRadius: 18))
+        .ddGlass(mode == DDChromeMode.duoClassic.rawValue ? .regular : .identity, .rect(18))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("douyin.forward.success")
         .accessibilityAction(.escape, onClose)
