@@ -2,35 +2,33 @@ name: Build DouDuo iOS 17 IPA
 
 on:
   workflow_dispatch:
-    inputs:
-      runner:
-        description: 'Runner（arm64 拥堵时可换 macos-15-intel）'
-        required: false
-        default: 'macos-15'
-        type: choice
-        options:
-          - macos-15
-          - macos-15-intel
-          - macos-latest
 
 jobs:
   build:
-    name: Build DouDuo iOS 17 Unsigned IPA (${{ inputs.runner || 'macos-15' }})
-    runs-on: ${{ inputs.runner || 'macos-15' }}
+    name: Build DouDuo iOS 17 Unsigned IPA (xcode-27)
+    # xcode-27 runner: macOS 27 + Xcode 27 beta + iOS 27 SDK
+    # DouDuo 源码用了 iOS 27.1 API (reservedRegions/glassEffect 等), 必须用 iOS 27 SDK 编译
+    runs-on: xcode-27
     timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select newest Xcode
+      - name: Select Xcode 27
         run: |
           uname -m
           ls -d /Applications/Xcode*.app || true
-          NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-          echo "selected: $NEWEST"
-          sudo xcode-select -s "$NEWEST" || true
+          # 优先选 Xcode 27
+          X27=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$X27" ]; then
+            echo "selected: $X27"
+            sudo xcode-select -s "$X27"
+          else
+            NEWEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+            echo "Xcode 27 not found, selected newest: $NEWEST"
+            sudo xcode-select -s "$NEWEST" || true
+          fi
           xcodebuild -version
-          swift --version
           xcodebuild -showsdks | grep -i iphoneos || true
 
       - name: Install XcodeGen
@@ -60,19 +58,19 @@ jobs:
             build 2>&1 | tee build.log
 
       - name: Package IPA
+        if: success()
         run: |
           APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -1)
           echo "APP=$APP"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist" || true
-          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist" || true
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist" || true
-          otool -l "$APP/DouDuo" | grep -A3 LC_BUILD_VERSION | head -5 || true
           rm -rf Payload && mkdir Payload
           cp -R "$APP" Payload/
           zip -qry DouDuo-1.7.2-ios17-unsigned.ipa Payload
           ls -lh DouDuo-1.7.2-ios17-unsigned.ipa
 
       - name: Upload IPA
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: DouDuo-ios17-unsigned
