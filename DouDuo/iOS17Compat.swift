@@ -94,7 +94,7 @@ extension View {
     @ViewBuilder
     func ddToolbarBgHiddenNavAndBottom() -> some View {
         if #available(iOS 18.0, *) {
-            self.toolbarBackgroundVisibility(.hidden, for: [.navigationBar, .bottomBar])
+            self.toolbarBackgroundVisibility(.hidden, for: .navigationBar, .bottomBar)
         } else {
             self
         }
